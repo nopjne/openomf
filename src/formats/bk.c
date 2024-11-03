@@ -10,6 +10,7 @@
 #include "formats/internal/writer.h"
 #include "formats/palette.h"
 #include "formats/pcx.h"
+#include "formats/transparent.h"
 #include "formats/vga_image.h"
 #include "utils/allocator.h"
 

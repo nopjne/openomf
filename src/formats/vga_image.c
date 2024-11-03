@@ -1,10 +1,18 @@
+#if !defined(N64_BUILD) && !defined(MIN_BUILD)
 #include <png.h>
+#endif
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef N64_BUILD
+#include <libdragon.h>
+#else
+#include <assert.h>
+#endif
 
 #include "formats/error.h"
+#include "formats/transparent.h"
 #include "formats/vga_image.h"
 #include "utils/allocator.h"
 #include "utils/png_writer.h"
@@ -16,7 +24,15 @@ int sd_vga_image_create(sd_vga_image *img, unsigned int w, unsigned int h) {
     img->w = w;
     img->h = h;
     img->len = w * h;
+    img->transparent = BACKGROUND_TRANSPARENT_INDEX;
+#ifdef N64_BUILD
+    assertf(w <= 320 && h <= 240, "w:%X h:%X", w, h);
+    img->data = malloc_uncached_aligned(64, w * h);
+    assert(img->data != NULL);
+    memset(img->data, 0, w * h);
+#else
     img->data = omf_calloc(1, w * h);
+#endif
     return SD_SUCCESS;
 }
 
@@ -28,6 +44,7 @@ int sd_vga_image_copy(sd_vga_image *dst, const sd_vga_image *src) {
     dst->h = src->h;
     dst->len = src->len;
     dst->data = omf_calloc(src->len, 1);
+    dst->transparent = src->transparent;
     memcpy(dst->data, src->data, src->len);
     return SD_SUCCESS;
 }
@@ -36,7 +53,11 @@ void sd_vga_image_free(sd_vga_image *img) {
     if(img == NULL) {
         return;
     }
+#ifdef N64_BUILD
+    free_uncached(img->data);
+#else
     omf_free(img->data);
+#endif
 }
 
 int sd_vga_image_decode(sd_rgba_image *dst, const sd_vga_image *src, const vga_palette *pal) {
@@ -62,6 +83,7 @@ int sd_vga_image_decode(sd_rgba_image *dst, const sd_vga_image *src, const vga_p
 }
 
 int sd_vga_image_from_png(sd_vga_image *img, const char *filename) {
+#if !defined(N64_BUILD) && !defined(MIN_BUILD)
     png_structp png_ptr;
     png_infop info_ptr;
     int ret = SD_SUCCESS;
@@ -159,9 +181,13 @@ error_1:
     fclose(handle);
 error_0:
     return ret;
+#else
+    return 0;
+#endif
 }
 
 int sd_vga_image_to_png(const sd_vga_image *img, const vga_palette *pal, const char *filename) {
+#if !defined(N64_BUILD) && !defined(MIN_BUILD)
     if(img == NULL || filename == NULL) {
         return SD_INVALID_INPUT;
     }
@@ -169,4 +195,7 @@ int sd_vga_image_to_png(const sd_vga_image *img, const vga_palette *pal, const c
         return SD_FILE_OPEN_ERROR;
     }
     return SD_SUCCESS;
+#else
+    return 0;
+#endif
 }

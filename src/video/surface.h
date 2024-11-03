@@ -20,12 +20,12 @@ enum
     SUB_METHOD_MIRROR
 };
 
-void surface_create(surface *sur, int w, int h);
+void surface_create(surface *sur, int w, int h, int transparent);
 void surface_create_from(surface *dst, const surface *src);
-void surface_create_from_vga(surface *sur, const sd_vga_image *src);
-void surface_create_from_image(surface *sur, image *img);
-void surface_create_from_data(surface *sur, int w, int h, const unsigned char *src);
-void surface_create_from_data_flip(surface *sur, int w, int h, const unsigned char *src);
+void surface_create_from_vga(surface *sur, const sd_vga_image *src, int transparent);
+void surface_create_from_image(surface *sur, image *img, int transparent);
+void surface_create_from_data(surface *sur, int w, int h, const unsigned char *src, int transparent);
+void surface_create_from_data_flip(surface *sur, int w, int h, const unsigned char *src, int transparent);
 void surface_create_from_surface(surface *sur, int w, int h, int src_x, int src_y, const surface *src);
 int surface_to_image(const surface *sur, image *img);
 void surface_free(surface *sur);

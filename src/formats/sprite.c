@@ -4,6 +4,7 @@
 #include "formats/error.h"
 #include "formats/palette.h"
 #include "formats/sprite.h"
+#include "formats/transparent.h"
 #include "utils/allocator.h"
 
 int sd_sprite_create(sd_sprite *sprite) {
@@ -271,6 +272,7 @@ int sd_sprite_vga_decode(sd_vga_image *dst, const sd_sprite *src) {
     uint16_t c = 0;
     uint16_t data = 0;
     char op = 0;
+    int transparent = SPRITE_TRANSPARENT_INDEX;
 
     // Make sure we aren't being fed BS
     if(dst == NULL || src == NULL) {
@@ -283,6 +285,8 @@ int sd_sprite_vga_decode(sd_vga_image *dst, const sd_sprite *src) {
     } else {
         sd_vga_image_create(dst, 1, 1);
     }
+
+    dst->transparent = SPRITE_TRANSPARENT_INDEX;
 
     // XXX CREDITS.BK has a bunch of 0 width sprites, for some unknown reason
     if(src->width == 0 || src->height == 0 || src->len == 0) {
@@ -310,6 +314,7 @@ int sd_sprite_vga_decode(sd_vga_image *dst, const sd_sprite *src) {
                     uint8_t b = src->data[i];
                     int pos = ((y * src->width) + x);
                     dst->data[pos] = b;
+                    assert(b != transparent);
                     i++; // we read 1 byte
                     x++;
                     data--;
@@ -323,6 +328,8 @@ int sd_sprite_vga_decode(sd_vga_image *dst, const sd_sprite *src) {
                 break;
         }
     }
+
+    dst->transparent = transparent;
 
     // All done. dst should now contain a valid vga image.
     return SD_SUCCESS;

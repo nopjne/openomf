@@ -8,6 +8,10 @@ extern const char *_text_realloc_error;
 // Add ifdefs here to include platform-specific allocators.
 #include "utils/allocator_default.h"
 
+#ifdef N64_BUILD
+void free(void *x);
+#endif
+
 #define omf_malloc(size) omf_malloc_real((size), __FILE__, __LINE__)
 #define omf_calloc(nmemb, size) omf_calloc_real((nmemb), (size), __FILE__, __LINE__)
 #define omf_realloc(ptr, size) omf_realloc_real((ptr), (size), __FILE__, __LINE__)

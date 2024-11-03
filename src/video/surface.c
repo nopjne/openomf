@@ -1,48 +1,53 @@
 #include "video/surface.h"
 #include "utils/allocator.h"
 #include "utils/miscmath.h"
+#if !defined(N64_BUILD) && !defined(MIN_BUILD)
 #include "utils/png_writer.h"
+#endif
+#include <SDL.h>
 #include <stdlib.h>
 
 // Each surface is tagged with a unique key. This is then used for texture atlas.
 // This keeps track of the last index used.
 static unsigned int guid = 0;
 
-void surface_create(surface *sur, int w, int h) {
+void surface_create(surface *sur, int w, int h, int transparent) {
+#ifdef N64_BUILD
+    sur->data = malloc_uncached_aligned(64, w * h);
+    sur->video_allocated = false;
+#else
     sur->data = omf_calloc(1, w * h);
+#endif
     sur->guid = guid++;
     sur->w = w;
     sur->h = h;
-    sur->transparent = 0;
+    sur->transparent = transparent;
 }
 
-void surface_create_from_data(surface *sur, int w, int h, const unsigned char *src) {
-    surface_create(sur, w, h);
+void surface_create_from_data(surface *sur, int w, int h, const unsigned char *src, int transparent) {
+    surface_create(sur, w, h, transparent);
     memcpy(sur->data, src, w * h);
 }
 
-void surface_create_from_data_flip(surface *sur, int w, int h, const unsigned char *src) {
-    surface_create(sur, w, h);
+void surface_create_from_data_flip(surface *sur, int w, int h, const unsigned char *src, int transparent) {
+    surface_create(sur, w, h, transparent);
     for(int y = 0; y < h; y++) {
         memcpy(sur->data + (h - y - 1) * w, src + y * w, w);
     }
 }
 
-void surface_create_from_vga(surface *sur, const sd_vga_image *src) {
-    surface_create(sur, src->w, src->h);
+void surface_create_from_vga(surface *sur, const sd_vga_image *src, int transparent) {
+    surface_create(sur, src->w, src->h, transparent);
     memcpy(sur->data, src->data, src->w * src->h);
-    sur->transparent = -1;
 }
 
 void surface_create_from_surface(surface *sur, int w, int h, int src_x, int src_y, const surface *src) {
-    surface_create(sur, w, h);
+    surface_create(sur, w, h, src->transparent);
     surface_sub(sur, src, 0, 0, src_x, src_y, w, h, SUB_METHOD_NONE);
-    sur->transparent = src->transparent;
 }
 
-void surface_create_from_image(surface *sur, image *img) {
-    surface_create_from_data(sur, img->w, img->h, img->data);
-    sur->transparent = -1;
+void surface_create_from_image(surface *sur, image *img, int transparent) {
+    surface_create_from_data(sur, img->w, img->h, img->data, transparent);
 }
 
 int surface_to_image(const surface *sur, image *img) {
@@ -66,9 +71,8 @@ void surface_clear(surface *sur) {
 }
 
 void surface_create_from(surface *dst, const surface *src) {
-    surface_create(dst, src->w, src->h);
+    surface_create(dst, src->w, src->h, src->transparent);
     memcpy(dst->data, src->data, src->w * src->h);
-    dst->transparent = src->transparent;
 }
 
 // Copies a an area of old surface to an entirely new surface
@@ -179,5 +183,9 @@ void surface_compress_remap(surface *sur, int range_start, int range_end, int re
 }
 
 bool surface_write_png(const surface *sur, const vga_palette *pal, const char *filename) {
+#if !defined(N64_BUILD) && !defined(MIN_BUILD)
     return png_write_paletted(filename, sur->w, sur->h, pal, sur->data);
+#else
+    return true;
+#endif
 }
